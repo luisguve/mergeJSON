@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -40,9 +42,19 @@ func main() {
 			log.Fatal("os.Open path: ", err)
 		}
 
+		data, err := ioutil.ReadAll(f)
+		if err != nil {
+			log.Fatal("Error reading: ", err)
+		}
+
+		// Remove Byte Order Mark (BOM) from data.
+		// The BOM identifies that the text is UTF-8 encoded, but it should be
+		// removed before decoding
+		data = bytes.TrimPrefix(data, []byte("\xef\xbb\xbf"))
+
 		var v map[string]interface{}
-		if err = json.NewDecoder(f).Decode(&v); err != nil {
-			log.Fatal("Decode: ", err)
+		if err = json.Unmarshal(data, &v); err != nil {
+			log.Fatalf("Error unmarshaling %s: %v\n", path, err)
 		}
 		files = append(files, v)
 		return nil
